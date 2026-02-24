@@ -1,0 +1,54 @@
+.img-downloader-overlay-wrap {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  flex-direction: row;
+  gap: 6px;
+  align-items: center;
+  z-index: 10;
+}
+
+.img-downloader-overlay {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.img-downloader-overlay-nsfw {
+  background: rgba(255, 105, 180, 0.75);
+  font-size: 14px;
+}
+
+.img-downloader-overlay-nsfw:hover {
+  background: rgba(255, 105, 180, 0.95);
+  transform: scale(1.08);
+}
+
+.img-downloader-overlay:hover {
+  background: rgba(29, 155, 240, 0.9);
+  transform: scale(1.08);
+}
+
+.img-downloader-overlay.done {
+  background: rgba(0, 186, 124, 0.9);
+}
+
+.img-downloader-overlay-nsfw.done {
+  background: rgba(0, 186, 124, 0.9);
+}
+
+.img-downloader-overlay:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+}

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title data-i18n="optPageTitle">Settings - Illustration Downloader</title>
+  <link rel="stylesheet" href="../css/options.css">
+</head>
+<body>
+  <div class="page">
+    <header class="page-header">
+      <img src="../icons/icon128.png" alt="" class="page-icon" width="128" height="128">
+      <h1 data-i18n="extName">Illustration Downloader</h1>
+      <p class="page-desc" data-i18n="optPageDesc">Extension settings</p>
+    </header>
+
+    <main class="page-main">
+      <section class="block block-language">
+        <h2 class="block-title" data-i18n="optSectionLanguage">Language</h2>
+        <div class="block-body">
+          <div class="field field-language">
+            <div class="language-mode">
+              <label class="radio-wrap">
+                <input type="radio" name="localeMode" id="localeAuto" value="auto" checked>
+                <span data-i18n="optLanguageAuto">Automatic (browser language)</span>
+              </label>
+              <label class="radio-wrap">
+                <input type="radio" name="localeMode" id="localeCustom" value="custom">
+                <span data-i18n="optLanguageCustom">Custom</span>
+              </label>
+            </div>
+            <div id="customLocaleWrap" class="custom-locale-wrap" style="display: none;">
+              <label for="customLocale"></label>
+              <select id="customLocale" class="locale-select" aria-label="Language">
+                <option value="en">🇬🇧 English</option>
+                <option value="fr">🇫🇷 Français</option>
+                <option value="es">🇪🇸 Español</option>
+                <option value="ja">🇯🇵 日本語</option>
+                <option value="ko">🇰🇷 한국어</option>
+                <option value="zh_CN">🇨🇳 中文</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2 class="block-title" data-i18n="optSectionSave">Saving</h2>
+        <div class="block-body">
+          <div id="customFolderBlock" class="field" style="display: none;">
+            <label data-i18n="optCustomFolderLabel">Custom folder (outside Downloads)</label>
+            <p class="field-hint" data-i18n="optCustomFolderHint">Works with Chrome, or Brave if you enable the File System Access API flag.</p>
+            <div class="folder-row">
+              <button type="button" id="chooseFolder" class="btn btn-secondary" data-i18n="optChooseFolder">Choose folder…</button>
+              <button type="button" id="clearFolder" class="btn btn-ghost" data-i18n="optReset">Reset</button>
+            </div>
+            <p id="customFolderPath" class="folder-path"></p>
+          </div>
+          <div class="field">
+            <label for="saveFolder" data-i18n="optSaveFolderLabel">Downloads subfolder</label>
+            <p class="field-hint" id="saveFolderHintContainer"></p>
+            <input type="text" id="saveFolder" placeholder="Illustrations" maxlength="200" autocomplete="off">
+          </div>
+          <div class="field field-checkbox">
+            <input type="checkbox" id="askEachTime">
+            <label for="askEachTime" data-i18n="optAskEachTime">Ask where to save each time</label>
+          </div>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2 class="block-title" data-i18n="optSectionNsfw">NSFW illustrations</h2>
+        <div class="block-body">
+          <div class="field field-checkbox">
+            <input type="checkbox" id="nsfwEnabled">
+            <label for="nsfwEnabled" data-i18n="optNsfwEnabled">Enable NSFW illustrations</label>
+          </div>
+          <p class="field-hint" data-i18n="optNsfwHint">When enabled, an extra button saves the image to an nsfw folder.</p>
+        </div>
+      </section>
+
+      <section class="block">
+        <h2 class="block-title" data-i18n="optSectionSquare">Square format (tolerance)</h2>
+        <div class="block-body">
+          <p class="field-hint" data-i18n="optSquareHint">If the ratio is between these values, the image is classified as square.</p>
+          <div class="field-row">
+            <div class="field">
+              <label for="squareRatioMin" data-i18n="optRatioMin">Min ratio</label>
+              <input type="number" id="squareRatioMin" min="0.5" max="1" step="0.05" value="0.9">
+            </div>
+            <div class="field">
+              <label for="squareRatioMax" data-i18n="optRatioMax">Max ratio</label>
+              <input type="number" id="squareRatioMax" min="1" max="2" step="0.05" value="1.1">
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="page-actions">
+        <button type="button" id="save" class="btn btn-primary" data-i18n="optSave">Save</button>
+        <span id="status" class="status"></span>
+      </div>
+    </main>
+  </div>
+  <script src="../js/i18n.js"></script>
+  <script src="../js/options.js"></script>
+</body>
+</html>

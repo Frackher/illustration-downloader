@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs & cache
+*.log
+.npm/
+.cache/
+
+# Optional: décommenter si tu génères des builds
+# dist/
+# *.zip
