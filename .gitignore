@@ -17,6 +17,7 @@ Thumbs.db
 .npm/
 .cache/
 
-# Optional: décommenter si tu génères des builds
-# dist/
-# *.zip
+# Extension build (script build-extension-zip.ps1)
+extension-build/
+extension-zip/
+illustration-downloader-*.zip
