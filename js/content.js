@@ -38,7 +38,7 @@
         const u = new URL(src);
         let path = u.pathname;
         path = path.replace(/^\/c\/[^/]+\//, '/');
-        path = path.replace(/\/img-master\//, '/img-original/');
+        path = path.replace(/\/(img-master|custom-thumb)\//, '/img-original/');
         path = path.replace(/_((?!p\d)[a-z]+\d*)(\.[a-z]+)$/i, '$2');
         u.pathname = path;
         return u.toString();
@@ -118,9 +118,68 @@
     return (el.textContent || '').trim().slice(0, 2000);
   }
 
-  function getPixivArtist() {
+  /** Auteur depuis la carte qui contient l’image (pages favoris, recherche, etc. : évite le pseudo du connecté). */
+  /** Carte = ancêtre qui contient à la fois un lien œuvre ET un lien user (sinon on tombe sur le <a> autour de l'image, sans auteur). */
+  function findPixivCard(img) {
+    if (!img || !img.parentElement) return null;
+    let card = img.parentElement;
+    for (let i = 0; i < 30 && card; i++) {
+      if (card.querySelector('a[href*="/artworks/"]') && card.querySelector('a[href*="/users/"]')) {
+        return card;
+      }
+      card = card.parentElement;
+    }
+    return null;
+  }
+
+  function getPixivArtistForImage(img) {
+    const card = findPixivCard(img);
+    if (!card) return null;
     const isPixivSiteName = (s) => !s || /^pixiv\s*;?\s*$/i.test(String(s).trim());
     const ok = (s) => s && s.length > 0 && s.length < 100 && !isPixivSiteName(s);
+    const userLinks = card.querySelectorAll('a[href*="/users/"]');
+    const firstUserOnPage = document.querySelector('a[href*="/users/"]');
+    for (const a of userLinks) {
+      const name = (a.textContent || '').trim();
+      if (ok(name) && (!firstUserOnPage || a.getAttribute('href') !== firstUserOnPage.getAttribute('href'))) {
+        return name.slice(0, 80);
+      }
+    }
+    const firstOk = [...userLinks].find(a => ok((a.textContent || '').trim()));
+    return firstOk ? (firstOk.textContent || '').trim().slice(0, 80) : null;
+  }
+
+  function getPixivTitleForImage(img) {
+    const card = findPixivCard(img);
+    if (!card) return '';
+    const artLinks = card.querySelectorAll('a[href*="/artworks/"]');
+    let best = '';
+    for (const a of artLinks) {
+      const t = (a.textContent || '').trim();
+      if (t && t.length < 500 && !a.contains(img)) return t.slice(0, 2000);
+      if (t && (!best || t.length < best.length)) best = t.slice(0, 2000);
+    }
+    return best;
+  }
+
+  function getPixivPostUrlForImage(img) {
+    const card = findPixivCard(img);
+    if (!card) return null;
+    const artLink = card.querySelector('a[href*="/artworks/"]');
+    if (!artLink || !artLink.href) return null;
+    try {
+      return new URL(artLink.href, window.location.origin).href;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function getPixivArtist(img) {
+    const isPixivSiteName = (s) => !s || /^pixiv\s*;?\s*$/i.test(String(s).trim());
+    const ok = (s) => s && s.length > 0 && s.length < 100 && !isPixivSiteName(s);
+
+    const fromCard = img ? getPixivArtistForImage(img) : null;
+    if (fromCard) return fromCard;
 
     const path = (window.location.pathname || '').trim();
     if (/\/users\/\d+/.test(path)) {
@@ -182,7 +241,9 @@
     return null;
   }
 
-  function getPixivTitle() {
+  function getPixivTitle(img) {
+    const fromCard = img ? getPixivTitleForImage(img) : '';
+    if (fromCard) return fromCard;
     const h1 = document.querySelector('h1');
     if (h1) return (h1.textContent || '').trim().slice(0, 2000);
     const og = document.querySelector('meta[property="og:title"]');
@@ -193,7 +254,9 @@
     return '';
   }
 
-  function getPixivPostUrl() {
+  function getPixivPostUrl(img) {
+    const fromCard = img ? getPixivPostUrlForImage(img) : null;
+    if (fromCard) return fromCard;
     try {
       const path = (window.location.pathname || '').trim();
       const m = path.match(/\/artworks\/(\d+)/);
@@ -204,9 +267,17 @@
 
   function handleDownloadResponse(overlay, icon, res) {
     overlay.disabled = false;
-    const lastError = chrome.runtime.lastError;
+    let lastError;
+    try {
+      lastError = chrome.runtime.lastError;
+    } catch (e) {
+      lastError = e;
+    }
     if (lastError) {
-      logDownloadError(I18N.t('errCannotContact'), lastError.message || String(lastError));
+      const msg = (lastError.message || String(lastError)).includes('Extension context invalidated')
+        ? 'Extension reloaded. Please refresh the page.'
+        : (lastError.message || String(lastError));
+      logDownloadError(I18N.t('errCannotContact'), msg);
       overlay.textContent = icon;
       return;
     }
@@ -250,8 +321,22 @@
     }
 
     function addButtons() {
-      chrome.storage.sync.get('nsfwEnabled', (opts) => {
-        const nsfwEnabled = !!opts.nsfwEnabled;
+      const defaultOpts = { nsfwEnabled: false };
+      try {
+        chrome.storage.sync.get(['nsfwEnabled'], (result) => {
+          try {
+            const nsfwEnabled = !!(result && typeof result === 'object' && result.nsfwEnabled);
+            addButtonsWithOpts({ nsfwEnabled });
+          } catch (_) {
+            addButtonsWithOpts(defaultOpts);
+          }
+        });
+      } catch (_) {
+        addButtonsWithOpts(defaultOpts);
+      }
+    }
+    function addButtonsWithOpts(opts) {
+      const nsfwEnabled = !!(opts && opts.nsfwEnabled);
 
         if (nsfwEnabled) {
           const nsfwBtn = document.createElement('button');
@@ -269,21 +354,32 @@
           const imageUrl = getBestImageUrl(rawSrc);
           const isPixiv = isPixivPage() && PXIMG_REG.test(rawSrc);
           const platform = isPixiv ? 'pixiv' : 'x';
-          const artistName = isPixiv ? (getPixivArtist() || 'unknown') : (findArtistForImage(img) || 'unknown');
-          const postUrl = isPixiv ? getPixivPostUrl() : findPostUrl(img);
-          const postText = isPixiv ? getPixivTitle() : findPostText(img);
+          const artistName = isPixiv ? (getPixivArtist(img) || 'unknown') : (findArtistForImage(img) || 'unknown');
+          const postUrl = isPixiv ? getPixivPostUrl(img) : findPostUrl(img);
+          const postText = isPixiv ? getPixivTitle(img) : findPostText(img);
           logDownload(t('ariaDownloadNsfw'), { imageUrl, artistName });
-          chrome.runtime.sendMessage({
-            type: 'DOWNLOAD_IMAGE',
-            imageUrl,
-            artistName,
-            platform,
-            nsfw: true,
-            postUrl: postUrl || undefined,
-            postText: postText || undefined
-          }, (res) => {
-            handleDownloadResponse(nsfwBtn, '🔞', res);
-          });
+          try {
+            chrome.runtime.sendMessage({
+              type: 'DOWNLOAD_IMAGE',
+              imageUrl,
+              artistName,
+              platform,
+              nsfw: true,
+              postUrl: postUrl || undefined,
+              postText: postText || undefined
+            }, (res) => {
+              try {
+                handleDownloadResponse(nsfwBtn, '🔞', res);
+              } catch (_) {
+                nsfwBtn.textContent = '🔞';
+              }
+            });
+          } catch (e) {
+            handleDownloadResponse(nsfwBtn, '🔞', null);
+            if ((e.message || '').includes('Extension context invalidated')) {
+              logDownloadError(I18N.t('errCannotContact'), 'Extension reloaded. Please refresh the page.');
+            }
+          }
         });
         wrapper.appendChild(nsfwBtn);
       }
@@ -303,25 +399,35 @@
         const imageUrl = getBestImageUrl(rawSrc);
         const isPixiv = isPixivPage() && PXIMG_REG.test(rawSrc);
         const platform = isPixiv ? 'pixiv' : 'x';
-        const artistName = isPixiv ? (getPixivArtist() || 'unknown') : (findArtistForImage(img) || 'unknown');
-        const postUrl = isPixiv ? getPixivPostUrl() : findPostUrl(img);
-        const postText = isPixiv ? getPixivTitle() : findPostText(img);
+        const artistName = isPixiv ? (getPixivArtist(img) || 'unknown') : (findArtistForImage(img) || 'unknown');
+        const postUrl = isPixiv ? getPixivPostUrl(img) : findPostUrl(img);
+        const postText = isPixiv ? getPixivTitle(img) : findPostText(img);
         logDownload(t('ariaDownloadImage'), { imageUrl, artistName });
-        chrome.runtime.sendMessage({
-          type: 'DOWNLOAD_IMAGE',
-          imageUrl,
-          artistName,
-          platform,
-          postUrl: postUrl || undefined,
-          postText: postText || undefined
-        }, (res) => {
-          handleDownloadResponse(overlay, '↓', res);
-        });
+        try {
+          chrome.runtime.sendMessage({
+            type: 'DOWNLOAD_IMAGE',
+            imageUrl,
+            artistName,
+            platform,
+            postUrl: postUrl || undefined,
+            postText: postText || undefined
+          }, (res) => {
+            try {
+              handleDownloadResponse(overlay, '↓', res);
+            } catch (_) {
+              overlay.textContent = '↓';
+            }
+          });
+        } catch (e) {
+          handleDownloadResponse(overlay, '↓', null);
+          if ((e.message || '').includes('Extension context invalidated')) {
+            logDownloadError(I18N.t('errCannotContact'), 'Extension reloaded. Please refresh the page.');
+          }
+        }
       });
         wrapper.appendChild(overlay);
 
         container.appendChild(wrapper);
-      });
     }
   }
 

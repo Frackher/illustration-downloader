@@ -42,8 +42,10 @@ function getFormatFolder(ratio, min, max) {
 }
 
 function getFetchOpts(url) {
-  const opts = { mode: 'cors' };
-  if (url && url.includes('pximg.net')) opts.headers = { Referer: 'https://www.pixiv.net/' };
+  const opts = { mode: 'cors', cache: 'no-store' };
+  if (url && url.includes('pximg.net')) {
+    opts.headers = { Referer: 'https://www.pixiv.net/' };
+  }
   return opts;
 }
 
@@ -64,6 +66,14 @@ function pximgOriginalToMaster(url) {
   return url.replace(/\/img-original\//, '/img-master/').replace(/(\.[a-z]+)$/i, '_master1200$1');
 }
 
+/** URLs img-master à essayer en fallback (_master1200 puis _square1200). */
+function pximgMasterFallbackUrls(url) {
+  if (!url || !url.includes('i.pximg.net/img-original/')) return [];
+  const base = url.replace(/\/img-original\//, '/img-master/').replace(/(\.[a-z]+)$/i, '$1');
+  const ext = (url.match(/(\.[a-z]+)$/i) || [])[1] || '.jpg';
+  return [base + '_master1200' + ext, base + '_square1200' + ext];
+}
+
 /** Returns { width, height, mime, blob }. width/height can be null if the image could not be decoded. */
 async function getImageBlobAndDimensions(url) {
   let res = await fetch(url, getFetchOpts(url));
@@ -74,8 +84,10 @@ async function getImageBlobAndDimensions(url) {
       if (res.ok) break;
     }
     if (!res.ok) {
-      const masterUrl = pximgOriginalToMaster(url);
-      if (masterUrl) res = await fetch(masterUrl, getFetchOpts(masterUrl));
+      for (const masterUrl of pximgMasterFallbackUrls(url)) {
+        res = await fetch(masterUrl, getFetchOpts(masterUrl));
+        if (res.ok) break;
+      }
     }
   }
   if (!res.ok) throw new Error('Fetch failed: ' + res.status);
@@ -100,6 +112,29 @@ function arrayBufferToBinaryString(ab) {
   let s = '';
   for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
   return s;
+}
+
+/** Base64 en chunks pour éviter stack overflow sur gros buffers. */
+function arrayBufferToBase64(ab) {
+  const u = new Uint8Array(ab);
+  const chunkSize = 8192;
+  let binary = '';
+  for (let i = 0; i < u.length; i += chunkSize) {
+    binary += String.fromCharCode.apply(null, u.subarray(i, i + chunkSize));
+  }
+  return typeof btoa !== 'undefined' ? btoa(binary) : '';
+}
+
+/** Crée une URL pour chrome.downloads : blob si dispo, sinon data URL (fallback pour service workers). */
+function createDownloadUrl(blob, arrayBuffer, mime) {
+  if (typeof URL !== 'undefined' && typeof URL.createObjectURL === 'function') {
+    try {
+      return { url: URL.createObjectURL(blob), revoke: true };
+    } catch (_) {}
+  }
+  const base64 = arrayBufferToBase64(arrayBuffer);
+  if (!base64) throw new Error('URL.createObjectURL is not a function');
+  return { url: 'data:' + (mime || 'application/octet-stream') + ';base64,' + base64, revoke: false };
 }
 
 function binaryStringToArrayBuffer(s) {
@@ -286,8 +321,10 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             if (res.ok) break;
           }
           if (!res.ok) {
-            const masterUrl = pximgOriginalToMaster(imageUrl);
-            if (masterUrl) res = await fetch(masterUrl, opts);
+            for (const masterUrl of pximgMasterFallbackUrls(imageUrl)) {
+              res = await fetch(masterUrl, opts);
+              if (res.ok) break;
+            }
           }
         }
         blob = await res.blob();
@@ -345,23 +382,32 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         });
         if (r && r.ok) {
           sendResponse({ ok: true, format: formatFolder, skipped: !!r.skipped });
-        } else {
-          sendResponse({ ok: false, error: r?.error || 'Write failed', errorKey: 'errWriteFailed' });
+          return;
         }
-        return;
+        const customFolderUnavailable = r?.error && (
+          r.error.includes('getDirectoryHandle') ||
+          r.error.includes('not allowed by the user agent') ||
+          r.error.includes('request is not allowed')
+        );
+        if (!customFolderUnavailable) {
+          sendResponse({ ok: false, error: r?.error || 'Write failed', errorKey: 'errWriteFailed' });
+          return;
+        }
       }
 
       const pathSeg = (s) => String(s).replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').trim() || 'download';
       const filename = `${pathSeg(saveFolder)}/${pathSeg(formatFolder)}/${fileName}`;
       const blobForDownload = new Blob([arrayBuffer], { type: mime || 'application/octet-stream' });
-      const blobUrl = URL.createObjectURL(blobForDownload);
+      const { url: downloadUrl, revoke } = createDownloadUrl(blobForDownload, arrayBuffer, mime);
       await chrome.downloads.download({
-        url: blobUrl,
+        url: downloadUrl,
         filename,
         saveAs: askEachTime,
         conflictAction: 'uniquify'
       });
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+      if (revoke && typeof URL !== 'undefined' && typeof URL.revokeObjectURL === 'function') {
+        setTimeout(() => URL.revokeObjectURL(downloadUrl), 60000);
+      }
 
       sendResponse({ ok: true, format: formatFolder });
     } catch (e) {

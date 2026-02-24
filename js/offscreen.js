@@ -202,7 +202,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
       if (msg.arrayBuffer && msg.arrayBuffer.byteLength > 0) {
         arrayBuffer = msg.arrayBuffer;
       } else {
-        const fetchOpts = { mode: 'cors' };
+        const fetchOpts = { mode: 'cors', cache: 'no-store' };
         if (msg.referer) fetchOpts.headers = { Referer: msg.referer };
         let url = msg.imageUrl;
         let res = await fetch(url, fetchOpts);
@@ -215,8 +215,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
             if (res.ok) break;
           }
           if (!res.ok) {
-            url = url.replace(/\/img-original\//, '/img-master/').replace(/(\.[a-z]+)$/i, '_master1200$1');
-            res = await fetch(url, fetchOpts);
+            const base = url.replace(/\/img-original\//, '/img-master/').replace(/(\.[a-z]+)$/i, '$1');
+            const ext = (url.match(/(\.[a-z]+)$/i) || [])[1] || '.jpg';
+            for (const suffix of ['_master1200', '_square1200']) {
+              url = base + suffix + ext;
+              res = await fetch(url, fetchOpts);
+              if (res.ok) break;
+            }
           }
         }
         if (!res.ok) throw new Error('Fetch failed: ' + res.status);

@@ -60,7 +60,7 @@ describe('Content overlay – addButtons toujours appelé', () => {
         const u = new URL(src);
         let path = u.pathname;
         path = path.replace(/^\/c\/[^/]+\//, '/');
-        path = path.replace(/\/img-master\//, '/img-original/');
+        path = path.replace(/\/(img-master|custom-thumb)\//, '/img-original/');
         path = path.replace(/_((?!p\d)[a-z]+\d*)(\.[a-z]+)$/i, '$2');
         u.pathname = path;
         return u.toString();
@@ -90,6 +90,44 @@ describe('Content overlay – addButtons toujours appelé', () => {
       const in_ = 'https://i.pximg.net/img-master/img/2026/01/04/01/58/50/139492032_p0_master1200.png';
       const out = getBestImageUrlPixiv(in_);
       expect(out).toContain('139492032_p0.png');
+    });
+
+    it('custom-thumb + _custom1200 (page favoris) → img-original', () => {
+      const in_ = 'https://i.pximg.net/c/360x360_70/custom-thumb/img/2026/02/22/08/30/02/141475386_p0_custom1200.jpg';
+      const out = getBestImageUrlPixiv(in_);
+      expect(out).not.toContain('/c/360x360_70/');
+      expect(out).toContain('/img-original/');
+      expect(out).toContain('141475386_p0.jpg');
+      expect(out).not.toContain('custom-thumb');
+      expect(out).not.toContain('_custom1200');
+    });
+  });
+
+  describe('NSFW button – addButtonsWithOpts / storage', () => {
+    function nsfwEnabledFromOpts(opts) {
+      return !!(opts && opts.nsfwEnabled);
+    }
+    function nsfwEnabledFromStorageResult(result) {
+      return !!(result && typeof result === 'object' && result.nsfwEnabled);
+    }
+
+    it('opts.nsfwEnabled true => bouton NSFW affiché', () => {
+      expect(nsfwEnabledFromOpts({ nsfwEnabled: true })).toBe(true);
+    });
+    it('opts.nsfwEnabled false => pas de bouton NSFW', () => {
+      expect(nsfwEnabledFromOpts({ nsfwEnabled: false })).toBe(false);
+    });
+    it('opts vide ou undefined => pas de bouton NSFW', () => {
+      expect(nsfwEnabledFromOpts({})).toBe(false);
+      expect(nsfwEnabledFromOpts(null)).toBe(false);
+      expect(nsfwEnabledFromOpts(undefined)).toBe(false);
+    });
+    it('résultat storage get([nsfwEnabled]) avec true => nsfwEnabled true', () => {
+      expect(nsfwEnabledFromStorageResult({ nsfwEnabled: true })).toBe(true);
+    });
+    it('résultat storage sans clé nsfwEnabled => nsfwEnabled false', () => {
+      expect(nsfwEnabledFromStorageResult({})).toBe(false);
+      expect(nsfwEnabledFromStorageResult(null)).toBe(false);
     });
   });
 });

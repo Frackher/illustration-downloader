@@ -80,6 +80,7 @@ Version history (SemVer, see Versioning section above).
 
 | Version | Date       | Changes |
 |---------|------------|---------|
+| 1.0.1   | 2026-02-19 | Pixiv: custom-thumb + _custom1200 (bookmark page); _square1200 fallback on 404; artist/title/URL from card (avoids logged-in user); data URL fallback when createObjectURL missing; Downloads fallback when custom folder unavailable; cache no-store. Extension context invalidated handled. |
 | 1.0.0   | 2026-02-19 | **Release 1.0.** Pixiv: img-original first, try extensions (.png, .jpg, …) before img-master; profile pages (/c/, _square1200 URLs); artist name from h1/og:title on user page. Pixiv tests (getBestImageUrl, pximgOriginal*). |
 | 0.6.0   | 2025-02-15 | **Pixiv** support (original format, master fallback on 404). Author from DOM block + metadata “… by Author”. Referer via declarativeNetRequest. No overlay on avatars. |
 | 0.5.0   | 2025-02-15 | **EXIF + XMP metadata** (date, author, source, description). UTF-8 for Japanese and other languages. X author from URL on photo view. |
