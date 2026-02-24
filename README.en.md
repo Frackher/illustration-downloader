@@ -5,13 +5,13 @@ Chrome/Brave extension to easily save illustrations from **X.com** and **Pixiv**
 **Documentation:** [English](README.en.md) | [Français](README.md) — The extension UI is available in French, English, Japanese, Korean, Chinese, and Spanish (`_locales/`). **Doc translations** (README, tests) into other languages are welcome (ja, ko, zh_CN, es, etc.).
 
 - **Author:** Fracker (with Cursor)
-- **Version:** 0.6.0 (pre-release, no public release) — [SemVer](https://semver.org/)
+- **Version:** 1.0.0 — [SemVer](https://semver.org/)
 
 ## Installation
 
 1. Open `chrome://extensions` (or `brave://extensions`).
 2. Enable **Developer mode**.
-3. Click **Load unpacked** and select the `imgDownloader` folder.
+3. Click **Load unpacked** and select the project folder (e.g. `illustrationDownloader`).
 
 ## Usage
 
@@ -72,9 +72,7 @@ The project follows [Semantic Versioning](https://semver.org/) (SemVer): **MAJOR
 | **MINOR** | New backward-compatible features. |
 | **PATCH** | Backward-compatible bug fixes. |
 
-During pre-release (no public release), the version stays **0.MINOR.PATCH**: major 0 means any update may still introduce incompatible changes. When going public, the version can move to **1.0.0** and SemVer applies fully.
-
-Examples: 0.6.0 → 0.6.1 (fix), 0.6.1 → 0.7.0 (feature), 0.x.x → 1.0.0 (public release).
+Examples: 1.0.0 → 1.0.1 (fix), 1.0.1 → 1.1.0 (feature).
 
 ## Release
 
@@ -82,6 +80,7 @@ Version history (SemVer, see Versioning section above).
 
 | Version | Date       | Changes |
 |---------|------------|---------|
+| 1.0.0   | 2026-02-19 | **Release 1.0.** Pixiv: img-original first, try extensions (.png, .jpg, …) before img-master; profile pages (/c/, _square1200 URLs); artist name from h1/og:title on user page. Pixiv tests (getBestImageUrl, pximgOriginal*). |
 | 0.6.0   | 2025-02-15 | **Pixiv** support (original format, master fallback on 404). Author from DOM block + metadata “… by Author”. Referer via declarativeNetRequest. No overlay on avatars. |
 | 0.5.0   | 2025-02-15 | **EXIF + XMP metadata** (date, author, source, description). UTF-8 for Japanese and other languages. X author from URL on photo view. |
 | 0.4.0   | 2025-02-11 | **NSFW** option (🔞 button, nsfw folder). **Square format** tolerance configurable. |

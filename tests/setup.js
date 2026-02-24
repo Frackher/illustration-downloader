@@ -77,7 +77,7 @@ function loadBackground() {
   globalThis.createImageBitmap = vi.fn(() => Promise.resolve({ width: 800, height: 600, close: vi.fn() }));
   globalThis.importScripts = vi.fn(); // background.js loads lib/piexif.js via importScripts
   const code = readFileSync(join(root, 'js', 'background.js'), 'utf8') +
-    '\nglobalThis.__bg = { getFormatFolder, getExtensionFromUrl, safeFilenamePart };\n';
+    '\nglobalThis.__bg = { getFormatFolder, getExtensionFromUrl, safeFilenamePart, pximgOriginalAlternateUrls, pximgOriginalToMaster };\n';
   eval(code);
   return globalThis.__bg;
 }

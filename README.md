@@ -5,13 +5,13 @@ Extension Chrome/Brave pour sauvegarder facilement les illustrations depuis **X.
 **Documentation :** [Français](README.md) | [English](README.en.md) — L’extension est disponible en français, anglais, japonais, coréen, chinois et espagnol (`_locales/`). **Traductions de la doc** (README, tests) dans d’autres langues sont les bienvenues (ja, ko, zh_CN, es, etc.).
 
 - **Auteur** : Fracker (assisté par Cursor)
-- **Version** : 0.6.0 (pre-release, pas de release publique) — [SemVer](https://semver.org/)
+- **Version** : 1.0.0 — [SemVer](https://semver.org/)
 
 ## Installation
 
 1. Ouvrir `chrome://extensions` (ou `brave://extensions`).
 2. Activer **Mode développeur**.
-3. Cliquer sur **Charger l’extension non empaquetée** et choisir le dossier `imgDownloader`.
+3. Cliquer sur **Charger l’extension non empaquetée** et choisir le dossier du projet (ex. `illustrationDownloader`).
 
 ## Utilisation
 
@@ -74,7 +74,7 @@ Le projet suit [Semantic Versioning](https://semver.org/) (SemVer) : **MAJOR.MIN
 
 En phase de pré-release (pas de release publique), la version reste en **0.MINOR.PATCH** : le major 0 indique que toute mise à jour peut encore introduire des changements incompatibles. Au passage en release publique, la version pourra passer à **1.0.0** et les règles SemVer s’appliqueront pleinement.
 
-Exemples : 0.6.0 → 0.6.1 (correctif), 0.6.1 → 0.7.0 (nouvelle fonctionnalité), 0.x.x → 1.0.0 (release publique).
+Exemples : 1.0.0 → 1.0.1 (correctif), 1.0.1 → 1.1.0 (nouvelle fonctionnalité).
 
 ## Release
 
@@ -82,6 +82,7 @@ Historique des versions (SemVer, voir section Versioning ci-dessus).
 
 | Version | Date       | Nouveautés |
 |---------|------------|------------|
+| 1.0.0   | 2026-02-19 | **Release 1.0.** Pixiv : img-original prioritaire, essai extensions (.png, .jpg, …) avant img-master ; pages profil (URLs /c/, _square1200) ; nom d'artiste depuis h1/og:title sur page utilisateur. Tests Pixiv (getBestImageUrl, pximgOriginal*). |
 | 0.6.0   | 2025-02-15 | Support **Pixiv** (format original, fallback master si 404). Auteur depuis bloc DOM + metadata « … by Auteur ». Referer via declarativeNetRequest. Pas d’overlay sur les avatars. |
 | 0.5.0   | 2025-02-15 | **Métadonnées** EXIF + XMP (date, auteur, source, description). Encodage UTF-8 pour japonais et autres langues. Auteur X depuis URL sur vue photo. |
 | 0.4.0   | 2025-02-11 | Option **NSFW** (bouton 🔞, dossier nsfw). Tolérance **format carré** configurable. |

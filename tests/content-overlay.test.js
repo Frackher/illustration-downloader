@@ -51,4 +51,45 @@ describe('Content overlay – addButtons toujours appelé', () => {
     expect(out).toContain('format=jpg');
     expect(out).toContain('name=orig');
   });
+
+  describe('getBestImageUrl Pixiv', () => {
+    const PXIMG_REG = /^https?:\/\/i\.pximg\.net\//;
+    function getBestImageUrlPixiv(src) {
+      if (!src || !PXIMG_REG.test(src)) return src;
+      try {
+        const u = new URL(src);
+        let path = u.pathname;
+        path = path.replace(/^\/c\/[^/]+\//, '/');
+        path = path.replace(/\/img-master\//, '/img-original/');
+        path = path.replace(/_((?!p\d)[a-z]+\d*)(\.[a-z]+)$/i, '$2');
+        u.pathname = path;
+        return u.toString();
+      } catch (_) {
+        return src;
+      }
+    }
+
+    it('img-master → img-original et enlève _master1200', () => {
+      const in_ = 'https://i.pximg.net/img-master/img/2026/01/04/01/58/50/139492032_p0_master1200.jpg';
+      const out = getBestImageUrlPixiv(in_);
+      expect(out).toContain('/img-original/');
+      expect(out).toContain('139492032_p0.jpg');
+      expect(out).not.toContain('_master1200');
+    });
+
+    it('enlève préfixe /c/ (crop) et _square1200', () => {
+      const in_ = 'https://i.pximg.net/c/240x240/img-master/img/2026/01/04/01/58/50/139492032_p0_square1200.jpg';
+      const out = getBestImageUrlPixiv(in_);
+      expect(out).not.toContain('/c/240x240/');
+      expect(out).toContain('/img-original/');
+      expect(out).toContain('139492032_p0.jpg');
+      expect(out).not.toContain('_square1200');
+    });
+
+    it('préserve _p0 (numéro de page)', () => {
+      const in_ = 'https://i.pximg.net/img-master/img/2026/01/04/01/58/50/139492032_p0_master1200.png';
+      const out = getBestImageUrlPixiv(in_);
+      expect(out).toContain('139492032_p0.png');
+    });
+  });
 });
